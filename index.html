@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>貓咪大戰爭：無盡攻防戰</title>
+  <style>
+    /* 網頁整體外觀設定 */
+    body {
+      background-color: #1a191f;
+      color: #f5f5f7;
+      font-family: 'Microsoft JhengHei', Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    #game-container {
+      background-color: #2b2a33;
+      padding: 25px;
+      border-radius: 20px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.8);
+      max-width: 750px;
+      width: 100%;
+      border: 4px solid #4e4c5a;
+      box-sizing: border-box;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #3a3845;
+      padding: 10px 20px;
+      border-radius: 12px;
+      border-bottom: 4px solid #f39c12;
+      margin-bottom: 20px;
+    }
+
+    h1 { font-size: 1.4rem; margin: 0; color: #f39c12; }
+    .gold-display { font-size: 1.2rem; font-weight: bold; color: #f1c40f; }
+
+    .battlefield {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 20px 0;
+      gap: 10px;
+    }
+
+    .character-card {
+      background-color: #1f1e24;
+      padding: 15px;
+      border-radius: 15px;
+      width: 45%;
+      height: 340px;
+      box-sizing: border-box;
+      border: 2px solid #444;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .vs {
+      font-size: 1.6rem;
+      font-weight: bold;
+      color: #e74c3c;
+      font-style: italic;
+      flex-shrink: 0;
+    }
+
+    .avatar-container {
+      width: 100px;
+      height: 100px;
+      margin: 0 auto;
+      background-color: #ffffff;
+      border-radius: 15px;
+      border: 3px solid #f39c12;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .game-svg {
+      width: 85%;
+      height: 85%;
+      position: absolute;
+      top: 7.5%;
+      left: 7.5%;
+    }
+
+    /* 貓咪進化特效 */
+    .avatar-container.evo-mid {
+      border-color: #3498db !important;
+      box-shadow: 0 0 15px rgba(52, 152, 219, 0.6);
+    }
+    .avatar-container.evo-mid .game-svg {
+      transform: scale(1.15);
+    }
+
+    .avatar-container.evo-high {
+      border-color: #f1c40f !important;
+      box-shadow: 0 0 25px rgba(241, 196, 15, 0.8);
+    }
+    .avatar-container.evo-high .game-svg {
+      transform: scale(1.3);
+    }
+
+    h2 { font-size: 1.1rem; margin: 8px 0 5px 0; color: #fff; }
+
+    .hp-bar-container {
+      background-color: #444;
+      height: 14px;
+      border-radius: 7px;
+      overflow: hidden;
+      margin: 5px 0;
+      border: 1px solid #000;
+    }
+
+    .hp-bar { background-color: #e74c3c; height: 100%; transition: width 0.2s ease; width: 100%; }
+    #player-hp-bar { background-color: #2ecc71; }
+
+    .stats p { margin: 4px 0; font-size: 0.95rem; }
+    .small-text { font-size: 0.8rem; color: #bdc3c7; }
+
+    .intent-box {
+      background-color: #1a191f;
+      padding: 6px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      color: #bdc3c7;
+      border: 1px dashed #7f8c8d;
+    }
+
+    .log-box {
+      background-color: #1a191f;
+      border-left: 5px solid #f39c12;
+      padding: 12px;
+      border-radius: 8px;
+      text-align: left;
+      height: 80px;
+      overflow-y: auto;
+      margin: 20px 0;
+      font-size: 0.9rem;
+    }
+    .log-box h3 { margin: 0 0 5px 0; font-size: 0.8rem; color: #7f8c8d; }
+
+    .actions {
+      display: flex;
+      justify-content: space-between;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .btn {
+      padding: 12px 20px;
+      font-size: 0.95rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.2s;
+      flex: 1;
+    }
+    .btn-attack { background-color: #e74c3c; color: white; }
+    .btn-attack:hover { background-color: #c0392b; }
+    .btn-defend { background-color: #3498db; color: white; }
+    .btn-defend:hover { background-color: #2980b9; }
+    .btn-restart { background-color: #f1c40f; color: black; display: none; }
+
+    .divider { border: 0; height: 2px; background: #3a3845; margin: 25px 0; }
+
+    .shop-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    .shop-header h3 { margin: 0; color: #f1c40f; font-size: 1.1rem; }
+    .shop-limit-badge {
+      background-color: #e67e22;
+      color: #fff;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: bold;
+    }
+
+    .shop-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .shop-item {
+      background-color: #3a3845;
+      border: 2px solid #4e4c5a;
+      border-radius: 10px;
+      padding: 10px;
+      cursor: pointer;
+      box-sizing: border-box;
+      flex: 1 1 30%;
+      text-align: center;
+      min-height: 95px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+    .shop-item.wide {
+      flex: 1 1 45%;
+    }
+    
+    .shop-item:hover:not(:disabled) { background-color: #4e4c5a; border-color: #f1c40f; }
+    .item-name { font-weight: bold; color: #fff; font-size: 0.85rem; }
+    .item-desc { font-size: 0.75rem; color: #bdc3c7; margin: 4px 0; }
+    .item-cost { font-weight: bold; color: #f1c40f; font-size: 0.85rem; }
+
+    button:disabled {
+      background-color: #222 !important;
+      border-color: #333 !important;
+      color: #555 !important;
+      cursor: not-allowed;
+    }
+    button:disabled .item-name, button:disabled .item-cost { color: #555 !important; }
+  </style>
+</head>
+<body>
+
+<div id="game-container">
+  <div class="header">
+    <h1>貓咪大戰爭：無盡攻防戰</h1>
+    <div class="gold-display">💰 貓罐頭: <span id="player-gold">200</span></div>
+  </div>
+  
+  <div class="battlefield">
+    <div class="character-card">
+      <div class="avatar-container" id="player-avatar">
+        <svg class="game-svg" viewBox="0 0 100 100">
+          <path d="M 26 42 L 18 16 Q 32 23 41 33" fill="white" stroke="black" stroke-width="3.5" stroke-linejoin="round"/>
+          <path d="M 74 42 L 82 16 Q 68 23 59 33" fill="white" stroke="black" stroke-width="3.5" stroke-linejoin="round"/>
+          <ellipse cx="50" cy="56" rx="30" ry="26" fill="white" stroke="black" stroke-width="3.5"/>
+          <circle cx="41" cy="54" r="3" fill="black"/>
+          <circle cx="59" cy="54" r="3" fill="black"/>
+          <path d="M 46 62 Q 50 66 50 62 Q 50 66 54 62" fill="none" stroke="black" stroke-width="3" stroke-linecap="round"/>
+          <ellipse cx="34" cy="59" rx="3" ry="1.5" fill="#ffb6c1" opacity="0.7"/>
+          <ellipse cx="66" cy="59" rx="3" ry="1.5" fill="#ffb6c1" opacity="0.7"/>
+        </svg>
+      </div>
+      <h2 id="player-name">基本貓 (Lv.1)</h2>
+      <div class="hp-bar-container">
+        <div id="player-hp-bar" class="hp-bar"></div>
+      </div>
+      <div class="stats">
+        <p>血量: <span id="player-hp">150</span> / 150</p>
+        <p>護盾: <span id="player-shield">0</span></p>
+        <p class="small-text">攻擊加成: +<span id="attr-atk">0</span> | 防禦加成: +<span id="attr-def">0</span></p>
+      </div>
+    </div>
+
+    <div class="vs">VS</div>
+
+    <div class="character-card">
+      <div class="avatar-container">
+        <svg id="enemy-doge" class="game-svg" viewBox="0 0 100 100">
+          <circle cx="50" cy="55" r="28" fill="#fdfbf7" stroke="black" stroke-width="4"/>
+          <path d="M20 40 Q15 15 35 30 M80 40 Q85 15 65 30" fill="#f3edd8" stroke="black" stroke-width="4"/>
+          <ellipse cx="42" cy="48" rx="4" ry="6" fill="black"/>
+          <ellipse cx="58" cy="48" rx="4" ry="6" fill="black"/>
+          <ellipse cx="50" cy="58" rx="5" ry="3" fill="#4a3b32"/>
+          <path d="M45 66 Q50 71 55 66" fill="none" stroke="black" stroke-width="3"/>
+        </svg>
+        <svg id="enemy-snake" class="game-svg" viewBox="0 0 100 100" style="display: none;">
+          <path d="M25 75 Q35 45 50 75 T75 75" fill="none" stroke="#78c257" stroke-width="12" stroke-linecap="round"/>
+          <circle cx="75" cy="70" r="10" fill="#78c257"/>
+          <circle cx="77" cy="67" r="2" fill="black"/>
+          <path d="M83 70 L90 68 M83 70 L90 72" stroke="red" stroke-width="2"/>
+        </svg>
+      </div>
+      <h2 id="monster-name">狗狗 (Doge)</h2>
+      <div class="hp-bar-container">
+        <div id="monster-hp-bar" class="hp-bar"></div>
+      </div>
+      <div class="stats">
+        <p>血量: <span id="monster-hp">80</span> / 80</p>
+        <div class="intent-box">👹 敵人正在伺機而動...</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="log-box">
+    <h3>戰鬥紀錄</h3>
+    <div id="combat-log">貓咪軍團出擊！請點擊按鈕進行策略攻防！</div>
+  </div>
+
+  <div class="actions">
+    <button id="btn-attack" class="btn btn-attack">貓咪肉搏 (22 傷害)</button>
+    <button id="btn-defend" class="btn btn-defend">召喚牆貓 (+30 護盾)</button>
+    <button id="btn-restart" class="btn btn-restart" style="width: 100%;">重新出兵</button>
+  </div>
+
+  <hr class="divider">
+
+  <div class="shop-section">
+    <div class="shop-header">
+      <h3>🛒 貓咪基地研究所</h3>
+      <div class="shop-limit-badge">本回合剩餘購買次數: <span id="shop-limit">5</span>/5</div>
+    </div>
+    
+    <div class="shop-grid">
+      <button class="shop-item" id="shop-sword">
+        <span class="item-name">⚔️ 魚貓爪升級</span>
+        <span class="item-desc">攻擊力 +5</span>
+        <span class="item-cost">💰 40</span>
+      </button>
+      <button class="shop-item" id="shop-shield">
+        <span class="item-name">🛡️ 牆貓體型加大</span>
+        <span class="item-desc">防禦護盾 +8</span>
+        <span class="item-cost">💰 35</span>
+      </button>
+      <button class="shop-item" id="shop-thorns">
+        <span class="item-name">🌵 荊棘貓外殼</span>
+        <span class="item-desc">反彈 6 點傷害</span>
+        <span class="item-cost">💰 50</span>
+      </button>
+      <button class="shop-item wide" id="shop-glove">
+        <span class="item-name">💎 寶物雷達</span>
+        <span class="item-desc">罐頭收益 +30%</span>
+        <span class="item-cost">💰 60</span>
+      </button>
+      <button class="shop-item wide" id="shop-potion">
+        <span class="item-name">🧪 急救貓薄荷</span>
+        <span class="item-desc">恢復 40 點血量</span>
+        <span class="item-cost">💰 20</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// 遊戲邏輯控制
+let p_hp = 150, p_max = 150, p_shield = 0, p_gold = 200; 
+let p_atk_bonus = 0, p_def_bonus = 0, p_thorns = 0, p_multi = 1.0;
+let p_level = 1;
+
+let m_stage = 1, m_hp = 80, m_max = 80, m_dmg = 12, m_name = "狗狗 (Doge)";
+let shop_left = 5;
+
+const elpHp = document.getElementById('player-hp');
+const elpHpBar = document.getElementById('player-hp-bar');
+const elpShield = document.getElementById('player-shield');
+const elpGold = document.getElementById('player-gold');
+const elpAtk = document.getElementById('attr-atk');
+const elpDef = document.getElementById('attr-def');
+const elpName = document.getElementById('player-name');
+const elpAvatar = document.getElementById('player-avatar');
+
+const elmName = document.getElementById('monster-name');
+const elmHp = document.getElementById('monster-hp');
+const elmHpBar = document.getElementById('monster-hp-bar');
+
+const elShopLimit = document.getElementById('shop-limit');
+const elLog = document.getElementById('combat-log');
+const btnAtk = document.getElementById('btn-attack');
+const btnDef = document.getElementById('btn-defend');
+const btnReset = document.getElementById('btn-restart');
+
+const btnShopSword = document.getElementById('shop-sword');
+const btnShopShield = document.getElementById('shop-shield');
+const btnShopThorns = document.getElementById('shop-thorns');
+const btnShopGlove = document.getElementById('shop-glove');
+const btnShopPotion = document.getElementById('shop-potion');
+
+function render() {
+  elpHp.innerText = p_hp;
+  elpHpBar.style.width = (p_hp / p_max * 100) + "%";
+  elpShield.innerText = p_shield;
+  elpGold.innerText = p_gold;
+  elpAtk.innerText = p_atk_bonus;
+  elpDef.innerText = p_def_bonus;
+  
+  elmName.innerText = m_name;
+  elmHp.innerText = m_hp;
+  elmHpBar.style.width = (m_hp / m_max * 100) + "%";
+  
+  elShopLimit.innerText = shop_left;
+
+  let upgrades = Math.floor((p_atk_bonus / 5) + (p_def_bonus / 8));
+  p_level = 1 + upgrades;
+  
+  if (p_level >= 8) {
+    elpName.innerText = "神聖健美貓 (Lv." + p_level + ")";
+    elpName.style.color = "#f1c40f";
+    elpAvatar.className = "avatar-container evo-high";
+  } else if (p_level >= 4) {
+    elpName.innerText = "肌肉牆貓 (Lv." + p_level + ")";
+    elpName.style.color = "#3498db";
+    elpAvatar.className = "avatar-container evo-mid";
+  } else {
+    elpName.innerText = "基本貓 (Lv." + p_level + ")";
+    elpName.style.color = "#ffffff";
+    elpAvatar.className = "avatar-container";
+  }
+
+  btnShopSword.disabled  = (p_gold < 40 || shop_left <= 0 || p_hp <= 0);
+  btnShopShield.disabled = (p_gold < 35 || shop_left <= 0 || p_hp <= 0);
+  btnShopThorns.disabled = (p_gold < 50 || shop_left <= 0 || p_hp <= 0);
+  btnShopGlove.disabled  = (p_gold < 60 || shop_left <= 0 || p_hp <= 0);
+  btnShopPotion.disabled = (p_gold < 20 || shop_left <= 0 || p_hp <= 0);
+}
+
+function setActionState(disabled) {
+  btnAtk.disabled = disabled;
+  btnDef.disabled = disabled;
+}
+
+function enemyTurn() {
+  if (p_hp <= 0) return;
+
+  let isHeavy = Math.random() > 0.7;
+  let baseDmg = Math.floor(m_dmg + (m_stage * 3));
+  if (isHeavy) baseDmg = Math.floor(baseDmg * 1.5);
+
+  let msg = isHeavy ? "💥 " + m_name + " 發動了【強力衝撞】！" : "🐾 " + m_name + " 發動了普通抓擊。";
+  
+  if (p_shield > 0) {
+    if (p_shield >= baseDmg) {
+      p_shield -= baseDmg;
+      msg += "被牆貓防線完美擋下！";
+    } else {
+      let pierce = baseDmg - p_shield;
+      p_shield = 0;
+      p_hp -= pierce;
+      msg += "衝破防線，對基地造成 " + pierce + " 點肉體傷害！";
+    }
+  } else {
+    p_hp -= baseDmg;
+    msg += "直接咬中貓咪，造成 " + baseDmg + " 點傷害！";
+  }
+
+  if (p_hp < 0) p_hp = 0;
+  elLog.innerHTML += "<br>👹 " + msg;
+
+  if (p_thorns > 0 && m_hp > 0) {
+    m_hp -= p_thorns;
+    if (m_hp < 0) m_hp = 0;
+    elLog.innerHTML += "<br>🌵 荊棘反彈！對敵方彈回 " + p_thorns + " 點傷害。";
+  }
+
+  shop_left = 5; 
+  render();
+
+  if (p_hp <= 0) {
+    elLog.innerHTML = "<span style='color:#e74c3c; font-weight:bold;'>💀 基地被攻陷！你在第 " + m_stage + " 波攻勢中戰敗。</span>";
+    setActionState(true);
+    btnAtk.style.display = "none";
+    btnDef.style.display = "none";
+    btnReset.style.display = "block";
+  } else if (m_hp <= 0) {
+    setTimeout(enemyDefeated, 400);
+  } else {
+    setActionState(false);
+  }
+}
+
+function enemyDefeated() {
+  let reward = Math.floor((25 + (m_stage * 10)) * p_multi);
+  p_gold += reward;
+  elLog.innerHTML = "🎉 成功擊退敵軍！獲得 💰" + reward + " 貓罐頭！";
+
+  m_stage++;
+  m_max = 70 + (m_stage * 18);
+  m_hp = m_max;
+
+  let pool = ["狗狗 (Doge)", "蛇蛇 (Snache)"];
+  let picked = pool[Math.floor(Math.random() * pool.length)];
+  m_name = picked + " (Lv." + m_stage + ")";
+
+  document.getElementById("enemy-doge").style.display = picked.includes("狗狗") ? "block" : "none";
+  document.getElementById("enemy-snake").style.display = picked.includes("蛇蛇") ? "block" : "none";
+
+  p_shield = 0;
+  shop_left = 5;
+  setActionState(false);
+  render();
+}
+
+btnAtk.addEventListener('click', function() {
+  let dmg = 22 + Math.floor(Math.random() * 6) + p_atk_bonus; 
+  m_hp -= dmg;
+  if (m_hp < 0) m_hp = 0;
+  elLog.innerHTML = "⚔️ 貓咪出擊！對敵方造成了 <span style='color:#e74c3c'>" + dmg + "</span> 點傷害。";
+  
+  render();
+  setActionState(true);
+
+  if (m_hp <= 0) {
+    setTimeout(enemyDefeated, 400);
+  } else {
+    setTimeout(enemyTurn, 600);
+  }
+});
+
+btnDef.addEventListener('click', function() {
+  let gain = 30 + p_def_bonus; 
+  p_shield += gain;
+  elLog.innerHTML = "🛡️ 召喚牆貓！成功建立 <span style='color:#3498db'>" + gain + "</span> 點肉盾防線！";
+  
+  render();
+  setActionState(true);
+  setTimeout(enemyTurn, 600);
+});
+
+btnReset.addEventListener('click', function() {
+  p_hp = 150; p_max = 150; p_shield = 0; p_gold = 200;
+  p_atk_bonus = 0; p_def_bonus = 0; p_thorns = 0; p_multi = 1.0; p_level = 1;
+  m_stage = 1; m_hp = 80; m_max = 80; m_name = "狗狗 (Doge)";
+  shop_left = 5;
+
+  document.getElementById("enemy-doge").style.display = "block";
+  document.getElementById("enemy-snake").style.display = "none";
+  elLog.innerText = "重新組織貓咪軍團，反攻開始！";
+  
+  btnReset.style.display = "none";
+  btnAtk.style.display = "block";
+  btnDef.style.display = "block";
+  
+  setActionState(false);
+  render();
+});
+
+btnShopSword.addEventListener('click', function() {
+  if (p_gold >= 40 && shop_left > 0) { p_gold -= 40; shop_left--; p_atk_bonus += 5; elLog.innerHTML = "🛒 研究所升級【魚貓爪】，基礎傷害提升 5 點！"; render(); }
+});
+btnShopShield.addEventListener('click', function() {
+  if (p_gold >= 35 && shop_left > 0) { p_gold -= 35; shop_left--; p_def_bonus += 8; elLog.innerHTML = "🛒 研究所升級【牆貓體型】，召喚護盾提升 8 點！"; render(); }
+});
+btnShopThorns.addEventListener('click', function() {
+  if (p_gold >= 50 && shop_left > 0) { p_gold -= 50; shop_left--; p_thorns += 6; elLog.innerHTML = "🛒 研究所安裝【荊棘外殼】，反傷能力提升 6 點！"; render(); }
+});
+btnShopGlove.addEventListener('click', function() {
+  if (p_gold >= 60 && shop_left > 0) { p_gold -= 60; shop_left--; p_multi += 0.3; elLog.innerHTML = "🛒 研究所開發【寶物雷達】，貓罐頭收益提升 30%！"; render(); }
+});
+btnShopPotion.addEventListener('click', function() {
+  if (p_gold >= 20 && shop_left > 0) { p_gold -= 20; shop_left--; p_hp = Math.min(p_max, p_hp + 40); elLog.innerHTML = "🛒 使用【急急貓薄荷】，貓咪軍團恢復 40 點血量！"; render(); }
+});
+
+render();
+</script>
+
+</body>
+</html>
